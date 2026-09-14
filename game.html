@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden Game</title>
+    <link rel="icon" type="image/png" href="Icons/cactus_flower.png">
+    <link href="style.css" rel="stylesheet" type="text/css" media="all">
+  </head>
+  <body style="text-align:center;">
+    <a style="bottom:0%;color:white;text-decoration:none;position:absolute;left:1vw;top:1vw;" href="https://tonkle.neocities.org/">Return to site.</a><br>
+    <div class="main-content" style="left:0%;width:100%">
+    <h1>Funky Garden Game</h1>
+
+    <p>Making a game rn.</p><br>
+    <div id="game-window">
+        <div id="menu" style="position:absolute;left:0px;">
+            <button class="menu" style="position:relative;top:15px;" onclick="ChangeMenu(0)">Garden</button>
+            <button class="menu" style="position:relative;top:15px;" onclick="ChangeMenu(1)">Shop</button>
+            <button class="menu" style="position:relative;top:15px;" onclick="ChangeMenu(2)">Achievements</button>
+        </div>
+        <div id="gem">
+            <p id="gem-count" style="position:absolute;right:25px;height:0px;">0</p>
+            <div style="position:absolute;right:0px;"><img src="Icons/Gem.png" style="height:25px;width:25px;position:relative;top:15px;"></img></div>
+        </div>
+        <canvas id="game-canvas" style="background-image:url('Icons/rock.png');background-size: 32px 32px;" width="512" height="256" onmousemove="getMousePos(canvas,event)" onmousedown="draw(event)"></canvas>
+        <p id="recent-things"><br><br>>Loaded the game.</p>
+        <div id="storage" style="padding-left:20%;height:30%;display:grid;grid-template-columns:12.5% 12.5% 12.5% 12.5% 12.5% 12.5%;"></div>
+        <div id="shop-scalar-buttons" style="padding-left:20%;width:60%;height:30%;display:none;grid-template-columns:25% 25% 25% 25%;"><span></span><button id="divide-ten" onclick="ChangeShop(0.1)">÷10</button><button id="multiply-ten" onclick="ChangeShop(10)">x10</button></div>
+        <div id="shop" style="padding-left:20%;height:30%;display:none;grid-template-columns:12.5% 12.5% 12.5% 12.5% 12.5% 12.5%;"></div>
+        <p id="achievements-label" style="display:none;">Achievements:</p>
+        <div id="achievements" style="height:30%;display:none;grid-template-columns:25% 25% 25% 25%;"></div>
+    </div>
+    
+    <br><br><br>
+    <p id="plot-number">Plot: 0</p>
+    <button onclick="MovePlot(current_plot_num-1)" style="width:20%;margin-left:1.5%">Previous Plot</button><button onclick="SaveData()" style="width:20%;margin-left:1.5%">Save</button><button onclick="MovePlot(current_plot_num+1)" style="width:20%;margin-left:1.5%">Next Plot</button>
+    <br><br>
+    <button onclick="window.open('manual.pdf')" style="width:30%;margin-left:1.5%">View Manual</button>
+    <button onclick="HighContrast()" style="width:30%;margin-left:1.5%">High Contrast</button>
+    <br><br>
+    <div id="clear-plot-form" style="display:none;margin-left:1.5%"><p>Clear Plants <input class="checkbox" type="checkbox" id="clear-plants-box"></p><p>Clear Tiles <input class="checkbox" type="checkbox" id="clear-tiles-box"></p><p>Delete Plot <input class="checkbox" type="checkbox" id="delete-plot-box"></p></div>
+    <button onclick="ClearPlot()" style="width:15%;margin-left:1.5%;background-color:lightcoral;">Clear Plot</button>
+    <br>
+    <p style="font-size:8px">This game takes place on a 16x8 grid. You start with only a single cactus, and your garden grows from there. You can sell plants to the merchant, and exchange gems for useful items such as grass seeds or bushes. Below are all of the game's sprites, if you want them for anything.</p>
+    <div id="sprites"></div>
+    <br><br><hr><br>
+    <a style="bottom:0%;color:white;text-decoration:none;grid-template-columns:33.3% 33.3% 33.3%" href="https://www.youtube.com/watch?v=G6__llZtLW8">"We never notice all the green around us until the season's passed." - Blixemi</a>
+    </div>
+    <script>
+        var gems = 0;
+        var menu = 0; // 0 is the garden, 1 is shop.
+        var canvas = document.getElementById("game-canvas");
+        var ctx = canvas.getContext("2d");
+        var img = document.createElement("img");
+        img.src = "Icons/cactus.png";
+        actual_plants = ["Cactus", "Dark Cactus", "Bush", "Black Bush", "Snowy Bush"];
+        three_stage_plants = ["Cactus", "Dark Cactus"]
+        sprites = ["Icons/cactus.png", "Icons/small_flower_cactus.png", "Icons/large_flower_cactus.png", "Icons/dark_cactus.png", "Icons/small_flower_dark_cactus.png", "Icons/large_flower_dark_cactus.png", "Icons/bush.png", "Icons/berry_bush.png", "Icons/black_bush.png", "Icons/black_berry_bush.png", "Icons/snowy_bush.png", "Icons/berry_snowy_bush.png", "Icons/tree.png", "Icons/apple_tree.png", "Icons/hand.png", "Icons/magnifying_glass.png", "Icons/shovel.png", "Icons/tile_shovel.png", "Icons/fishing_rod.png", "Icons/grass.png", "Icons/grass_seeds.png", "Icons/sand.png", "Icons/sand_dust.png", "Icons/snowy_grass.png", "Icons/snowball.png", "Icons/water.gif", "Icons/water1.png", "Icons/water2.png", "Icons/water3.png", "Icons/water_bucket.png", "Icons/fish.png", "Icons/inverse_fish.png", "Icons/berries.png", "Icons/blueberries.png", "Icons/blackberries.png", "Icons/cactus_flower.png", "Icons/dark_cactus_flower.png", "Icons/marigold.png", "Icons/apple.png", "Icons/Gem.png", "Icons/diamond_shards.png", "Icons/collection_box.png", "Icons/sandcastle.png", "Icons/present.png", "Icons/open_present.png", "Icons/snail.png", "Icons/shell.png", "Icons/catfish.png", "Icons/cactus_fish.png", "Icons/goldfish.png", "Icons/coral.png", "Icons/orange_coral.png", "Icons/bleached_coral.png"];
+        resources = {};
+        base_tiles = ["Sand", "Grass", "Snowy Grass", "None"]
+        var temp_draw_image = document.createElement("img");
+        canvas.appendChild(temp_draw_image);
+        var mousex = 0;
+        var mousey = 0;
+        var tiles = [];
+        var plants = [];
+        var extra_plots = [];
+        var storage = [{item:"Gather", quantity:"∞", image:"Icons/hand.png", placeon:[]},{item:"Check", quantity:"∞", image:"Icons/magnifying_glass.png", placeon:[]},{item:"Shovel", quantity:"∞", image:"Icons/shovel.png", placeon:[]}, {item:"Tile Shovel", quantity:"∞", image:"Icons/tile_shovel.png", placeon:[]}, {item:"Fishing Rod", quantity:"∞", image:"Icons/fishing_rod.png", placeon:[]}, {item:"Cactus", quantity:0, image:"Icons/cactus.png", placeon:["Sand"]}, {item:"Dark Cactus", quantity:0, image:"Icons/dark_cactus.png", placeon:["Sand"]}, {item:"Bush", quantity:0, image:"Icons/bush.png", placeon:["Grass"]}, {item:"Black Bush", quantity:0, image:"Icons/black_bush.png", placeon:["Grass"]}, {item:"Snowy Bush", quantity:0, image:"Icons/snowy_bush.png", placeon:["Snowy Grass"]}, {item:"Marigold", quantity:0, image:"Icons/marigold.png", placeon:["Grass"]}, {item:"Sand", quantity:0, image:"Icons/sand_dust.png", placeon:[]}, {item:"Grass Seeds", quantity:0, image:"Icons/grass_seeds.png", placeon:[]}, {item:"Snowball", quantity:0, image:"Icons/snowball.png", placeon:[]}, {item:"Water Bucket", quantity:0, image:"Icons/water_bucket.png", placeon:[]}, {item:"Collection Box", quantity:0, image:"Icons/collection_box.png", placeon:base_tiles}, {item:"Cactus Flower", quantity:0, image:"Icons/cactus_flower.png", placeon:base_tiles}, {item:"Dark Cactus Flower", quantity:0, image:"Icons/dark_cactus_flower.png", placeon:base_tiles}, {item:"Berries", quantity:0, image:"Icons/berries.png", placeon:base_tiles}, {item:"Blackberries", quantity:0, image:"Icons/blackberries.png", placeon:base_tiles}, {item:"Blueberries", quantity:0, image:"Icons/blueberries.png", placeon:base_tiles}, {item:"Snail Shell", quantity:0, image:"Icons/shell.png", placeon:base_tiles}, {item:"Catfish", quantity:0, image:"Icons/catfish.png", placeon:[]}, {item:"Cactusfish", quantity:0, image:"Icons/cactus_fish.png", placeon:[]}, {item:"Goldfish", quantity:0, image:"Icons/goldfish.png", placeon:[]}, {item:"Coral", quantity:0, image:"Icons/coral.png", placeon:base_tiles}, {item:"Sun Coral", quantity:0, image:"Icons/orange_coral.png", placeon:base_tiles}, {item:"Bleached Coral", quantity:0, image:"Icons/bleached_coral.png", placeon:base_tiles}]
+        var shop_storage = [{item:"Cactus", price:"2", image:"Icons/cactus.png"}, {item:"Bush", price:"5", image:"Icons/bush.png"}, {item:"Snowy Bush", price:"10", image:"Icons/snowy_bush.png"}, {item:"Sand", price:"1", image:"Icons/sand_dust.png"}, {item:"Grass Seeds", price:"2", image:"Icons/grass_seeds.png"}, {item:"Snowball", price:"2", image:"Icons/snowball.png"}, {item:"Water Bucket", price:"5", image:"Icons/water_bucket.png"}, {item:"Collection Box", price:"50", image:"Icons/collection_box.png"}, {item:"Extra Plot", price:"100", image:"Icons/shovel.png"}, {item:"Marigold", price:"25", image:"Icons/marigold.png"}]
+        var shop_sell_storage = [{item:"Cactus Flower", price:"1", image:"Icons/cactus_flower.png"}, {item:"Dark Cactus Flower", price:"13", image:"Icons/dark_cactus_flower.png"}, {item:"Berries", price:"2", image:"Icons/berries.png"}, {item:"Blackberries", price:"2", image:"Icons/blackberries.png"}, {item:"Blueberries", price:"3", image:"Icons/blueberries.png"}, {item:"Catfish", price:"1", image:"Icons/catfish.png"}, {item:"Cactusfish", price:"3", image:"Icons/cactus_fish.png"}, {item:"Goldfish", price:"30", image:"Icons/goldfish.png"}, {item:"Coral", price:"3", image:"Icons/coral.png"}, {item:"Sun Coral", price:"10", image:"Icons/orange_coral.png"}, {item:"Bleached Coral", price:"20", image:"Icons/bleached_coral.png"}, {item:"Marigold", price:"25", image:"Icons/marigold.png"}]
+        var achievements = [{name: "First Steps", desc: "Buy any plant from the merchant.", rewards:["Grass Seeds"], reward_amounts:[1], completed:false}, {name: "Tile Finder", desc: "Find one of each type of tile.", rewards:["Sand", "Grass Seeds", "Snowball"], reward_amounts:[1,2,1], completed:false}, {name: "We Need More Sand", desc: "Build a sandcastle by placing sand on sand while you have over 25 sand.", rewards:["Sand"], reward_amounts:[25], completed:false}, {name: "Gone Fishin'", desc: "Use the fishing rod to catch something.", rewards:["Water Bucket"], reward_amounts:[3], completed:false}, {name: "Global Warming", desc: "Catch a Sun Coral, which can reduce the amount of time plants need to grow.", rewards:["Coral"], reward_amounts:[3], completed:false}, {name: "Effects Of Global Warming", desc: "Catch a Bleached Coral, which makes you more likely to find rarer items while fishing.", rewards:["Snail Shell"], reward_amounts:[3], completed:false}, {name: "Goldilocks And The 3 Fishes", desc: "Catch the elusive goldfish.", rewards:["Catfish","Cactusfish","Coral"], reward_amounts:[1,1,1], completed:false}, {name: "Combine Harvester In A Box", desc: "Purchase a Collection Box, which allows you to automatically harvest all plants in a plot when interacted with.", rewards:["Marigold"], reward_amounts:[1], completed:false}, {name: "Strange New Worlds", desc: "Unlock a second plot.", rewards:["Bush"], reward_amounts:[3], completed:false}, {name: "A Strange Alchemy", desc: "Figure out how to turn a regular Bush into a Black Bush.", rewards:["Bush", "Blackberries"], reward_amounts:[1,1], completed:false}, {name: "Biodiversity", desc: "Have a plot containing every type of plant.", rewards:["Dark Cactus"], reward_amounts:[1], completed:false}, {name: "Gem Entrepeneur", desc: "Earn over 1,000 total gems.", rewards:["Marigold"], reward_amounts:[1], completed:false}, {name: "Hoard Like A Dragon", desc: "Have at least 1,000 of any item.", rewards:["Dark Cactus"], reward_amounts:[1], completed:false}, {name: "Dield Of Hopes and Dreams", desc: "Have 128 Marigolds on a single plot.", rewards:["Dark Cactus"], reward_amounts:[3], completed:false}]
+        var selected_plant = "Gather";
+        var selected_plant_image = "Icons/hand.png";
+        var plant_growth_time = 300000;
+        var current_plot_num = 0;
+        var unlocked_plots = 1;
+        var last_gem_refresh = 0;
+        var last_snail = Date.now();
+        var snail_interval = 20*60*1000;
+        var shop_price_scalar = 1;
+        var high_contrast = false;
+        var loaded_settings = false;
+        var bought_plant = 0;
+        var tiles_found = [];
+        var collection_box_bought = 0;
+        var black_bush_found = 0;
+        var total_gems = 0;
+        var built_sandcastle = 0;
+        var caught_any_fish = 0;
+        var caught_sun_coral = 0;
+        var caught_bleached_coral = 0;
+        var caught_goldfish = 0;
+        var current_fish = {item: "Cactus", quantity:0, x:-50, y:-50, speed:0, direction:0};
+        var recent_things = ["Loaded the game."];
+        var confirm_clear_plot = false;
+        var clear_plants = false;
+        var clear_tiles = false;
+        var delete_plot = false;
+        var rendering_fish = false;
+        var water_tiles = 0;
+
+        ctx.imageSmoothingEnabled = false;
+
+        function ChangeMenu(menu_selection) 
+        {
+            menu = menu_selection;
+            if(menu == 0)
+            {
+                shop_price_scalar = 1;
+                document.getElementById("storage").style.display = "grid";
+                document.getElementById("shop").style.display = "none";
+                document.getElementById("shop-scalar-buttons").style.display = "none";
+                document.getElementById("achievements").style.display = "none";
+                document.getElementById("achievements-label").style.display = "none";
+                document.getElementById("game-canvas").style = "background-image:url('Icons/rock.png');background-size: 32px 32px;";
+            }
+            else if(menu == 1)
+            {
+                document.getElementById("storage").style.display = "none";
+                document.getElementById("shop").style.display = "grid";
+                document.getElementById("shop-scalar-buttons").style.display = "grid";
+                document.getElementById("achievements").style.display = "none";
+                document.getElementById("achievements-label").style.display = "none";
+                document.getElementById("game-canvas").style = "background-image:url('Icons/shop_background.png');background-size: 600px 300px;";
+                ChangeShop(shop_price_scalar);
+            }
+            else
+            {
+                document.getElementById("storage").style.display = "none";
+                document.getElementById("shop").style.display = "none";
+                document.getElementById("shop-scalar-buttons").style.display = "none";
+                document.getElementById("achievements").style.display = "grid";
+                document.getElementById("achievements-label").style.display = "grid";
+            }
+        }
+
+        function ClearPlot()
+        {
+            clear_plants = document.getElementById("clear-plants-box").checked;
+            clear_tiles = document.getElementById("clear-tiles-box").checked;
+            delete_plot = document.getElementById("delete-plot-box").checked;
+            console.log(clear_plants, clear_tiles, delete_plot)
+            if(confirm_clear_plot)
+            {
+                if(clear_plants || clear_tiles || delete_plot)
+                {
+                    plants.forEach(plant => {
+                        DestroyPlant(plant, true)
+                    });
+                    plants = [];
+                }
+                if(clear_tiles || delete_plot)
+                {
+                    tiles.forEach(tile => {
+                        DestroyTile(tile, true);
+                    });
+                    tiles = [];
+                }
+                if(delete_plot && unlocked_plots > 0)
+                {
+                    unlocked_plots -= 1;
+                    doomed_plot = current_plot_num;
+                    MovePlot(0);
+                    extra_plots.splice(doomed_plot, 1);
+                }
+                document.getElementById("clear-plants-box").checked = false;
+                document.getElementById("clear-tiles-box").checked = false;
+                document.getElementById("delete-plot-box").checked = false;
+                document.getElementById("clear-plot-form").style.display = "none";
+                confirm_clear_plot = false;
+            }
+            else
+            {
+                confirm_clear_plot = true;
+                document.getElementById("clear-plot-form").style.display = "grid";
+            }
+        }
+
+        function HighContrast(contrast) 
+        {
+            if(loaded_settings)
+            {
+                high_contrast = !high_contrast;
+                recent_things.push("Set high contrast mode to " + high_contrast + ".");
+            }
+            if(high_contrast)
+            {
+                var img = new Image();
+                img.src = "Icons/visible_diamond_shards.png";
+                img.onload = function() {
+                    resources["Icons/diamond_shards.png"] = img;
+                }
+            }
+            else
+            {
+                var img = new Image();
+                img.src = "Icons/diamond_shards.png";
+                img.onload = function() {
+                    resources["Icons/diamond_shards.png"] = img;
+                }
+            }
+            SaveData()
+        }
+
+        function ChangeShop(scalar)
+        {
+            shop_price_scalar *= scalar;
+            if(shop_price_scalar >= 100)
+            {
+                shop_price_scalar = 100;
+            }
+            if(shop_price_scalar >= 1)
+            {
+                shop_storage.forEach(shop_item => {
+                    const shop_sell_grid = document.getElementById("shop");
+                    const shop_grid = document.getElementById("shop");
+                    shop_grid.innerHTML = '';
+                    shop_sell_grid.innerHTML = '';
+                    for (let i = 0; i < shop_storage.length; i++) {
+                        storage_quantity = "";
+                        storage.forEach(item => {
+                            if(item.item == shop_storage[i].item)
+                            {
+                                storage_quantity = item.quantity;
+                            }
+                        });
+                        if(shop_storage[i].item == "Extra Plot")
+                        {
+                            storage_quantity = unlocked_plots;
+                        }
+                        const grid_item = document.createElement("div");
+                        grid_item.setAttribute("onclick","BuyItem('" + shop_storage[i].price + "', '" + shop_storage[i].item + "')");
+                        grid_item.textContent = shop_price_scalar + "x " + shop_storage[i].item;
+                        grid_item.className = "shop-grid";
+                        const item_icon = document.createElement("img");
+                        item_icon.src = shop_storage[i].image;
+                        grid_item.appendChild(document.createElement("br"));
+                        grid_item.appendChild(item_icon);
+                        const item_price = document.createElement("p");
+                        item_price.innerHTML = shop_price_scalar * shop_storage[i].price + "<img src='Icons/Gem.png'></img><br>You have: " + storage_quantity;
+                        item_price.className = "item-count";
+                        item_price.id = shop_storage[i].item + "-price";
+                        grid_item.appendChild(item_price);
+                        shop_grid.appendChild(grid_item);
+                    }
+
+                    for (let i = 0; i < shop_sell_storage.length; i++) {
+                        storage_quantity = "";
+                        storage.forEach(item => {
+                            if(item.item == shop_sell_storage[i].item)
+                            {
+                                storage_quantity = item.quantity;
+                            }
+                        });
+                        const grid_item = document.createElement("div");
+                        grid_item.setAttribute("onclick","SellItem('" + shop_sell_storage[i].price + "', '" + shop_sell_storage[i].item + "')");
+                        grid_item.textContent = shop_price_scalar + "x " + shop_sell_storage[i].item;
+                        grid_item.className = "shop-sell-grid";
+                        const item_icon = document.createElement("img");
+                        item_icon.src = shop_sell_storage[i].image;
+                        grid_item.appendChild(document.createElement("br"));
+                        grid_item.appendChild(item_icon);
+                        const item_price = document.createElement("p");
+                        item_price.innerHTML = shop_price_scalar * shop_sell_storage[i].price + "<img src='Icons/Gem.png'></img><br>You have: " + storage_quantity;
+                        item_price.className = "item-count";
+                        item_price.id = shop_sell_storage[i].item + "-price";
+                        grid_item.appendChild(item_price);
+                        shop_sell_grid.appendChild(grid_item);
+                    }
+                });
+            }
+            else
+            {
+                shop_price_scalar = 1;
+            }
+        }
+
+        function CheckFish()
+        {
+            water_tiles = 0;
+            tiles.forEach(tile => {
+                if(tile.type == "Water")
+                {
+                    water_tiles++;
+                }
+            });
+            if(current_fish.x <= 524 && current_fish.x >= -24)
+            {
+                current_fish.x += current_fish.speed*current_fish.direction;
+                rendering_fish = false;
+                tiles.forEach(tile => {
+                    if(Math.abs(tile.x - current_fish.x/32) <= 1 && Math.abs(tile.y - current_fish.y/32) <= 1 && tile.type == "Water")
+                    {
+                        if(current_fish.direction == 1)
+                        {
+                            temp_draw_image = resources["Icons/inverse_fish.png"];
+                        }
+                        else
+                        {
+                            temp_draw_image = resources["Icons/fish.png"];
+                        }
+                        rendering_fish = true;
+                        ctx.drawImage(temp_draw_image, current_fish.x, current_fish.y, 48, 48);
+                    }
+                });
+            }
+            else if(water_tiles <= 48)
+            {
+                active_bleached_coral = false;
+                plants.forEach(plant => {
+                    if(plant.type == "Bleached Coral")
+                    {
+                        active_bleached_coral = true;
+                    }
+                });
+                new_direction = Math.round((Math.random()));
+                if(new_direction == 0)
+                {
+                    new_x = 524;
+                    new_direction = -1;
+                }
+                else
+                {
+                    new_x = -23;
+                    new_direction = 1;
+                }
+                item_rarity = Math.random()
+                fish_item = "Cactus"
+                fish_quantity = 1;
+                // Snail Shell rarity (5%) [12.5%]
+                if(item_rarity < 5/100 && active_bleached_coral == false || active_bleached_coral && item_rarity < 12.5/100)
+                {
+                    fish_item = "Snail Shell"
+                    fish_quantity = 1;
+                }
+                // Rare items rarity (5%) [7.5%]
+                else if(item_rarity < 10/100 && active_bleached_coral == false || active_bleached_coral && item_rarity < 20/100)
+                {
+                    tier_items = ["Blackberries", "Marigold", "Dark Cactus Flower"];
+                    tier_quantites = [5, 1, 1];
+                    selected_item = Math.floor(Math.random() * tier_items.length);
+                    fish_item = tier_items[selected_item];
+                    fish_quantity = tier_quantites[selected_item];
+                    if(collection_box_bought == 0)
+                    {
+                        fish_item = "Collection Box";
+                        fish_quantity = 1;
+                    }
+                }
+                // Fish rarity (50%) [30%]
+                else if(item_rarity < 60/100 && active_bleached_coral == false || active_bleached_coral && item_rarity < 50/100)
+                {
+                    tier_items = ["Catfish", "Cactusfish"];
+                    tier_quantites = [1,1];
+                    selected_item = Math.floor(Math.random() * tier_items.length);
+                    if(Math.random() < 1/67)
+                    {
+                        fish_item = "Goldfish";
+                        fish_quantity = 1;
+                    }
+                    else if(Math.random() < 1/5)
+                    {
+                        fish_item = "Coral";
+                        fish_quantity = 1;
+                    }
+                    else if(Math.random() < 1/16)
+                    {
+                        fish_item = "Sun Coral";
+                        fish_quantity = 1;
+                    }
+                    else if(Math.random() < 1/128)
+                    {
+                        fish_item = "Bleached Coral";
+                        fish_quantity = 1;
+                    }
+                    else
+                    {
+                        fish_item = tier_items[selected_item];
+                        fish_quantity = tier_quantites[selected_item];
+                    }
+                }
+                // Plants rarity (30%) [38.5%]
+                else if(item_rarity < 90/100 && active_bleached_coral == false || active_bleached_coral && item_rarity < 88.5/100)
+                {
+                    tier_items = ["Cactus", "Cactus", "Cactus Flower", "Bush", "Blackberries", "Sand", "Sand", "Berries", "Blueberries", "Grass Seeds"];
+                    tier_quantites = [1, 1, 1, 1, 1, 1, 5, 1, 1, 1];
+                    selected_item = Math.floor(Math.random() * tier_items.length);
+                    fish_item = tier_items[selected_item];
+                    fish_quantity = tier_quantites[selected_item];
+                }
+                // Gems rarity (9%) [10%]
+                else if(item_rarity < 99/100 && active_bleached_coral == false || active_bleached_coral && item_rarity < 98.5/100)
+                {
+                    fish_item = "Gems"
+                }
+                // Dark cactus rarity (1%) [1.5%]
+                else
+                {
+                    fish_item = "Dark Cactus"
+                }
+                current_fish = {item: fish_item, quantity:fish_quantity, x:new_x, y:Math.random() * 256, speed: Math.random()+0.2, direction:new_direction};
+            }
+
+        }
+
+        function CollectFish()
+        {
+            if(Math.abs(current_fish.x - mousex) <= 32 && Math.abs(current_fish.y - mousey) <= 32)
+            {
+                if(current_fish.item == "Gems")
+                {
+                    gems_caught = Math.ceil(Math.random()*15);
+                    gems += gems_caught;
+                    current_fish.x = -50;
+                    recent_things.push("Fished up " + gems_caught + " gems.")
+                }
+                else
+                {
+                    storage.forEach(item => {
+                        if(item.item == current_fish.item && rendering_fish)
+                        {
+                            item.quantity += current_fish.quantity;
+                            current_fish.x = -50;
+                            caught_any_fish = 1;
+                            if(current_fish.item == "Goldfish")
+                            {
+                                caught_goldfish = 1;
+                            }
+                            else if(current_fish.item == "Bleached Coral")
+                            {
+                                caught_bleached_coral = 1;
+                            }
+                            else if(current_fish.item == "Sun Coral")
+                            {
+                                caught_sun_coral = 1;
+                            }
+                            else if(current_fish.item == "Collection Box")
+                            {
+                                collection_box_bought = 1;
+                            }
+                            document.getElementById(item.item + "-count").textContent = item.quantity;
+                            recent_things.push("Caught " + current_fish.quantity + "x " + item.item + ".")
+                        }
+                    });
+                }
+            }
+            SaveData()
+        }
+
+        function Refresh()
+        {
+            checking_plant = null;
+            recent_list = "<br><br>";
+            if(recent_things.length < 3)
+            {
+                if(recent_things.length == 2)
+                {
+                    recent_list += "<br>"
+                }
+                else
+                {
+                    recent_list += "<br><br>"
+                }
+            }
+            else if(recent_things.length > 3)
+            {
+                recent_things.splice(0,1);
+            }
+            recent_things.forEach(thing => {
+                recent_list += "> " + thing + "<br>";
+            });
+            document.getElementById("recent-things").innerHTML = recent_list;
+            ctx.clearRect(0,0,512,256)
+            document.getElementById("gem-count").innerHTML = gems;
+            if(menu == 0)
+            {
+                CheckFish();
+                tiles.forEach(tile => {
+                    if(tiles_found.includes(tile.type) == false)
+                    {
+                        tiles_found.push(tile.type)
+                    }
+                    temp_draw_image = resources[tile.image];
+                    if(tile.type == "Water")
+                    {
+                        if(((tile.x-(tile.y%2))%2==0))
+                            if(Date.now()%1000 < 333)
+                            {
+                                temp_draw_image = resources["Icons/water1.png"];
+                            }
+                            else if(Date.now()%1000 < 666)
+                            {
+                                temp_draw_image = resources["Icons/water2.png"];
+                            }
+                            else
+                            {
+                                temp_draw_image = resources["Icons/water3.png"];
+                            }
+                        else
+                        {
+                            if(Date.now()%1000 < 333)
+                            {
+                                temp_draw_image = resources["Icons/water3.png"];
+                            }
+                            else if(Date.now()%1000 < 666)
+                            {
+                                temp_draw_image = resources["Icons/water2.png"];
+                            }
+                            else
+                            {
+                                temp_draw_image = resources["Icons/water1.png"];
+                            }
+                        }
+                    }
+                    if(temp_draw_image != undefined)
+                    {
+                        ctx.drawImage(temp_draw_image, tile.x*32, tile.y*32, 32, 32);
+                    }
+                });
+                const stages = {"Cactus": {0: "Icons/cactus.png", 1: "Icons/small_flower_cactus.png", 2: "Icons/large_flower_cactus.png"}, "Dark Cactus": {0: "Icons/dark_cactus.png", 1: "Icons/small_flower_dark_cactus.png", 2: "Icons/large_flower_dark_cactus.png"}, "Bush": {0: "Icons/bush.png", 1: "Icons/berry_bush.png"}, "Black Bush": {0: "Icons/black_bush.png", 1: "Icons/black_berry_bush.png"}, "Snowy Bush": {0: "Icons/snowy_bush.png", 1: "Icons/berry_snowy_bush.png"}};
+                plants.forEach(plant => {
+                    if(Object.keys(stages).includes(plant.type))
+                    {
+                        try
+                        {
+                            if((Date.now() - plant.born) > 2*plant_growth_time && stages[plant.type][2] != null)
+                            {
+                                plant.image = stages[plant.type][2];
+                            }
+                            else if((Date.now() - plant.born) > plant_growth_time)
+                            {
+                                plant.image = stages[plant.type][1];
+                            }
+                            else
+                            {
+                                plant.image = stages[plant.type][0];
+                            }
+                        }
+                        catch
+                        {
+                            if((Date.now() - plant.born) > plant_growth_time)
+                            {
+                                plant.image = stages[plant.type][1];
+                            }
+                            else
+                            {
+                                plant.image = stages[plant.type][0];
+                            }
+                        }
+                    }
+                    temp_draw_image = resources[plant.image];
+                    if(temp_draw_image != undefined)
+                    {
+                        ctx.drawImage(temp_draw_image, plant.x*32, plant.y*32, 32, 32);
+                    }
+                    if(Math.floor(mousex / 32) == plant.x && Math.floor(mousey / 32) == plant.y && selected_plant == "Check")
+                    {
+                        checking_plant = plant;
+                    }
+                });
+                if(temp_draw_image != undefined)
+                {
+                    ctx.drawImage(resources[selected_plant_image],mousex-16,mousey-16,32,32);
+                }
+                if(checking_plant != null)
+                {
+                    ctx.font = "30px Verdana";
+                    plant_age = Date.now() - checking_plant.born;
+                    if(checking_plant.x > 8)
+                    {
+                        ctx.textAlign = "end";
+                    }
+                    else
+                    {
+                        ctx.textAlign = "start";
+                    }
+                    if(actual_plants.includes(checking_plant.type))
+                    {
+                        maturity_time = plant_growth_time;
+                        if(three_stage_plants.includes(checking_plant.type))
+                        {
+                            maturity_time = 2*plant_growth_time;
+                        }
+                        if(plant_age > maturity_time)
+                        {
+                            ctx.fillText("Ready",mousex+10,mousey);
+                        }
+                        else
+                        {
+                            ctx.fillText("Time: " + Math.floor((maturity_time-plant_age)/60000) + "m" + Math.floor(((maturity_time-plant_age)%60000)/1000) + "s",mousex+10,mousey);
+                        }
+                    }
+                }
+            }
+        }
+
+        function OccasionalRefresh() {
+            achievements.forEach(achievement => {
+                if(achievement.completed)
+                {
+                    present_img = document.getElementById(achievement.name + "-achievement-present");
+                    present_img.src = "Icons/open_present.png";
+                    achievement_title = document.getElementById(achievement.name + "-achievement-title");
+                    achievement_title.textContent = achievement.name + " (Completed)";
+                    achievement_div = document.getElementById(achievement.name + "-achievement-div");
+                    achievement_div.style = "background-color:lightgray;"
+                }
+            });
+            if((Date.now()-last_gem_refresh) > 24*60*60*1000 && current_plot_num == 0)
+            {
+                last_gem_refresh = Date.now();
+                new_plants = []
+                plants.forEach(plant => {
+                    if(plant.type != "Gem")
+                    {
+                        new_plants.push(plant);
+                    }
+                });
+                plants = new_plants;
+                for (let x = 0; x < 16; x++) {
+                    for (let y = 0; y < 8; y++) {
+                        plant_here = false;
+                        plants.forEach(plant => {
+                            if(x == plant.x && y == plant.y)
+                            {
+                                plant_here = true;
+                            }
+                        });
+                        if(Math.random() < 1/32 && (plant_here == false))
+                        {
+                            plants.push({type:"Gem", image:"Icons/diamond_shards.png", x:x, y:y, born:0})
+                        }
+                    }
+                }
+                SaveData()
+            }
+            if(total_gems > 30)
+            {
+                snail_interval = 20*60*1000
+            }
+            else
+            {
+                snail_interval = 5*60*1000
+            }
+            if((Date.now()-last_snail) > snail_interval && Math.random() < 1/10)
+            {
+                last_snail = Date.now();
+                unplaceable_snail = true;
+                plants.forEach(plant => {
+                    if(plant.type == "Snail Shell" && plant.image == "Icons/snail.png")
+                    {
+                        if(plants.indexOf(plant) != -1)
+                            {
+                                plants.splice(plants.indexOf(plant), 1)
+                            }
+                    }
+                });
+                plant_here = true;
+                while(plant_here == true)
+                {
+                    plant_here = false;
+                    x = Math.floor(Math.random()*16)
+                    y = Math.floor(Math.random()*8)
+                    
+                    plants.forEach(plant => {
+                        if(x == plant.x && y == plant.y)
+                        {
+                            plant_here = true;
+                        }
+                    });
+                    tiles.forEach(tile => {
+                        if(x == tile.x && y == tile.y && tile.type == "Water")
+                        {
+                            plant_here = true;
+                        }
+                    });
+                    if(plant_here == false)
+                    {
+                        plants.push({type: "Snail Shell", image:"Icons/snail.png", x:x, y:y, born:0})
+                    }
+
+                }
+                SaveData()
+            }
+        }
+
+        function getMousePos(canvas, evt) {
+            var rect = canvas.getBoundingClientRect();
+            mousex = ((evt.clientX - rect.left)/600) * 512;
+            mousey = ((evt.clientY - rect.top)/300) * 256;
+        }
+
+        function draw(evt) {
+            var pos = getMousePos(canvas, evt);
+            if(menu == 0)
+            {
+                if(selected_plant == "Shovel")
+                {
+                    plants.forEach(plant => {
+                        if(Math.floor(mousex / 32) == plant.x && Math.floor(mousey / 32) == plant.y)
+                        {
+                            DestroyPlant(plant, false);
+                        }
+                    });
+                }
+                else if(selected_plant == "Tile Shovel")
+                {
+                    plant_here = false;
+                    plants.forEach(plant => {
+                        if(Math.floor(mousex / 32) == plant.x && Math.floor(mousey / 32) == plant.y)
+                        {
+                            plant_here = true;
+                        }
+                    });
+                    if(plant_here == false)
+                    {
+                        tiles.forEach(tile => {
+                            if(Math.floor(mousex / 32) == tile.x && Math.floor(mousey / 32) == tile.y)
+                            {
+                                DestroyTile(tile, false);
+                            }
+                        });
+                    }
+                }
+                else if(selected_plant == "Gather")
+                {
+                    plants.forEach(plant => {
+                        if(Math.floor(mousex / 32) == plant.x && Math.floor(mousey / 32) == plant.y)
+                        {
+                            GatherPlant(plant)
+                        }
+                    });
+                }
+                else if(selected_plant == "Fishing Rod")
+                {
+                    CollectFish();
+                }
+                else if(selected_plant == "Snail Shell")
+                {
+                    fertilised_plant = false;
+                    plants.forEach(plant => {
+                        if(Math.floor(mousex / 32) == plant.x && Math.floor(mousey / 32) == plant.y)
+                        {
+                            GatherPlant(plant)
+                            storage.forEach(item => {
+                                if(item.item == selected_plant && item.quantity > 0)
+                                {
+                                    if(actual_plants.includes(plant.type))
+                                    {
+                                        item.quantity--;
+                                        document.getElementById(item.item + "-count").textContent = item.quantity;
+                                        plant.born = 0;
+                                        fertilised_plant = true;
+                                        recent_things.push("Used a snail shell as fertiliser on a " + plant.type + ".")
+                                    }
+                                    else
+                                    {
+                                        fertilised_plant = true;
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    if(fertilised_plant == false)
+                    {
+                        tiles.forEach(tile => {
+                            if(Math.floor(mousex / 32) == tile.x && Math.floor(mousey / 32) == tile.y)
+                            {
+                                storage.forEach(item => {
+                                    if(item.item == selected_plant && item.quantity > 0)
+                                    {
+                                        plants.push({type:selected_plant, image:item.image, x:Math.floor(mousex/32), y:Math.floor(mousey/32), born:Date.now()});
+                                        item.quantity--;
+                                        document.getElementById(item.item + "-count").textContent = item.quantity;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+                else if(selected_plant == "Blackberries")
+                {
+                    converted_plant = false;
+                    plants.forEach(plant => {
+                        if(Math.floor(mousex / 32) == plant.x && Math.floor(mousey / 32) == plant.y && plant.type == "Bush")
+                        {
+                            storage.forEach(item => {
+                                if(item.item == selected_plant && item.quantity > 0)
+                                {
+                                    GatherPlant(plant);
+                                    item.quantity--;
+                                    document.getElementById(item.item + "-count").textContent = item.quantity;
+                                    plant.type = "Black Bush";
+                                    converted_plant = true;
+                                    black_bush_found = 1;
+                                    recent_things.push("Converted a Bush to a Black Bush using Blackberries.");
+                                }
+                            });
+                        }
+                        else if(Math.floor(mousex / 32) == plant.x && Math.floor(mousey / 32) == plant.y)
+                        {
+                            converted_plant = true;
+                        }
+                    });
+                    if(converted_plant == false)
+                    {
+                        tiles.forEach(tile => {
+                            if(Math.floor(mousex / 32) == tile.x && Math.floor(mousey / 32) == tile.y)
+                            {
+                                storage.forEach(item => {
+                                    if(item.item == selected_plant && item.quantity > 0)
+                                    {
+                                        plants.push({type:selected_plant, image:item.image, x:Math.floor(mousex / 32), y:Math.floor(mousey / 32), born:Date.now()});
+                                        item.quantity--;
+                                        document.getElementById(item.item + "-count").textContent = item.quantity;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+                else
+                {
+                    storage.forEach(item => {
+                        if(item.item == selected_plant && item.quantity > 0)
+                        {
+                            plant_already_placed = false;
+                            plants.forEach(plant => {
+                                if(Math.floor(mousex / 32) == plant.x && Math.floor(mousey / 32) == plant.y)
+                                {
+                                    plant_already_placed = true;
+                                }
+                            });
+                            correct_tile = false;
+                            unique_tile = true;
+                            existing_tile = "";
+                            tiles.forEach(tile => {
+                                if(Math.floor(mousex / 32) == tile.x && Math.floor(mousey / 32) == tile.y)
+                                {
+                                    if(item.placeon.includes(tile.type))
+                                    {
+                                        correct_tile = true;
+                                    }
+                                    else
+                                    {
+                                        unique_tile = false;
+                                        existing_tile = tile.type;
+                                        if(selected_plant == "Snowball" && existing_tile == "Grass" && plant_already_placed == false)
+                                        {
+                                            tile.type = "Snowy Grass";
+                                            tile.image = "Icons/snowy_grass.png";
+                                            item.quantity--;
+                                            document.getElementById(item.item + "-count").textContent = item.quantity;
+                                            recent_things.push("Converted a Grass tile to a Snowy Grass tile.")
+                                        }
+                                    }
+                                }
+                            });
+                            if(selected_plant == "Grass Seeds" && unique_tile)
+                            {
+                                tiles.push({type:"Grass", image:"Icons/grass.png", x:Math.floor(mousex/32), y:Math.floor(mousey/32)});
+                                item.quantity--;
+                                document.getElementById(item.item + "-count").textContent = item.quantity;
+                            }
+                            else if(selected_plant == "Sand" && unique_tile)
+                            {
+                                tiles.push({type:"Sand", image:"Icons/sand.png", x:Math.floor(mousex/32), y:Math.floor(mousey/32)});
+                                item.quantity--;
+                                document.getElementById(item.item + "-count").textContent = item.quantity;
+                            }
+                            else if(selected_plant == "Water Bucket" && unique_tile)
+                            {
+                                tiles.push({type:"Water", image:"Icons/water.gif", x:Math.floor(mousex/32), y:Math.floor(mousey/32)});
+                                item.quantity--;
+                                document.getElementById(item.item + "-count").textContent = item.quantity;
+                            }
+                            else if(selected_plant == "Sand" && existing_tile == "Sand" && plant_already_placed == false && item.quantity > 24)
+                            {
+                                plants.push({type: "Sandcastle", image: "Icons/sandcastle.png", x:Math.floor(mousex/32), y:Math.floor(mousey/32), born:Date.now()})
+                                item.quantity -= 25;
+                                document.getElementById(item.item + "-count").textContent = item.quantity;
+                                recent_things.push("Built a sandcastle using 25 sand.")
+                                built_sandcastle = 1;
+                            }
+                            else
+                            {
+                                if(plant_already_placed == false && correct_tile == true)
+                                {
+                                    active_sun_coral = false;
+                                    plants.forEach(plant => {
+                                        if(plant.type == "Sun Coral")
+                                        {
+                                            active_sun_coral = true;
+                                        }
+                                    });
+                                    if(active_sun_coral)
+                                    {
+                                        plants.push({type:selected_plant, image:item.image, x:Math.floor(mousex/32), y:Math.floor(mousey/32), born:Date.now()-60000});
+                                    }
+                                    else
+                                    {
+                                        plants.push({type:selected_plant, image:item.image, x:Math.floor(mousex/32), y:Math.floor(mousey/32), born:Date.now()});
+                                    }
+                                    item.quantity--;
+                                    document.getElementById(item.item + "-count").textContent = item.quantity;
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            SaveData()
+        }
+
+        function ChangePlant(plant_image, plant_name) {
+            selected_plant_image = plant_image;
+            selected_plant = plant_name;
+        }
+
+        function FirstLaunch() {
+            for (let x = 0; x < 16; x++) {
+                for (let y = 0; y < 8; y++) {
+                    tiles.push({type:"Sand", image:"Icons/sand.png", x:x, y:y});
+                }
+            }
+            plants = [{type:"Cactus", image:"Icons/cactus.png", x:7, y:4, born:0}];
+            extra_plots[current_plot_num] = {plot_plants: plants, plot_tiles: tiles}
+        }
+        
+        function BuyItem(price, shop_item) {
+            if(gems >= price * shop_price_scalar)
+            {
+                if(shop_item == "Extra Plot")
+                {
+                    gems -= parseInt(price * shop_price_scalar);
+                    unlocked_plots += shop_price_scalar;
+                    ChangeShop(1);
+                }
+                else
+                {
+                    storage.forEach(item => {
+                        if(item.item == shop_item)
+                        {
+                            if(actual_plants.includes(item.item))
+                            {
+                                bought_plant = 1;
+                            }
+                            else if(item.item == "Collection Box")
+                            {
+                                collection_box_bought = 1;
+                            }
+                            gems -= parseInt(price * shop_price_scalar);
+                            item.quantity += shop_price_scalar;
+                            document.getElementById(item.item + "-count").textContent = item.quantity;
+                            ChangeShop(1);
+                            recent_things.push("Bought " + shop_price_scalar + "x " + item.item + " for " + price*shop_price_scalar + " gems.")
+                        }
+                    });
+                }
+            }
+        }
+
+        function SellItem(price, shop_item) {
+            storage.forEach(item => {
+                if(item.item == shop_item && item.quantity >= shop_price_scalar)
+                {
+                    if(item.item != "Marigold")
+                    {
+                        total_gems += parseInt(price*shop_price_scalar);
+                    }
+                    gems += parseInt(price * shop_price_scalar);
+                    item.quantity -= shop_price_scalar;
+                    document.getElementById(item.item + "-count").textContent = item.quantity;
+                    ChangeShop(1);
+                    recent_things.push("Sold " + shop_price_scalar + "x " + item.item + " for " + price*shop_price_scalar + " gems.")
+                }
+            });
+        }
+
+        function DestroyPlant(plant, suppress_destruction) {
+            GatherPlant(plant)
+            if(plant.type == "Sandcastle")
+            {
+                plant.type = "Sand";
+                quantity_to_add = 25;
+            }
+            else
+            {
+                quantity_to_add = 1;
+            }
+            storage.forEach(item => {
+                if(item.item == plant.type)
+                {
+                    if(plants.indexOf(plant) != -1 && suppress_destruction == false)
+                    {
+                        plants.splice(plants.indexOf(plant), 1)
+                    }
+                    item.quantity += quantity_to_add;
+                    document.getElementById(item.item + "-count").textContent = item.quantity;
+                }
+            });
+        }
+
+        function DestroyTile(tile, suppress_destruction) {
+            storage.forEach(item => {
+                if(item.item == tile.type || tile.type == "Grass" && item.item == "Grass Seeds" || tile.type == "Water" && item.item == "Water Bucket")
+                {
+                    if(tiles.indexOf(tile) != -1 && suppress_destruction == false)
+                    {
+                        tiles.splice(tiles.indexOf(tile), 1)
+                    }
+                    item.quantity++;
+                    document.getElementById(item.item + "-count").textContent = item.quantity;
+                }
+                else if(tile.type == "Snowy Grass" && item.item == "Snowball" || tile.type == "Snowy Grass" && item.item == "Grass Seeds")
+                {
+                    if(tiles.indexOf(tile) != -1 && suppress_destruction == false)
+                    {
+                        tiles.splice(tiles.indexOf(tile), 1)
+                    }
+                    item.quantity++;
+                    document.getElementById(item.item + "-count").textContent = item.quantity;
+                }
+            });
+        }
+
+        function GatherPlant(plant) {
+            harvest_items = [{type: "Gem", harvest: "Gem", yields: [1,1,3,5], harvest_ready:2*plant_growth_time}, {type: "Cactus", harvest: "Cactus Flower", yields: [1], harvest_ready:2*plant_growth_time}, {type: "Dark Cactus", harvest: "Dark Cactus Flower", yields:[1], harvest_ready:2*plant_growth_time}, {type: "Bush", harvest: "Berries", yields:[1,1,2], harvest_ready:plant_growth_time}, {type: "Black Bush", harvest: "Blackberries", yields:[1,2], harvest_ready:plant_growth_time}, {type: "Snowy Bush", harvest: "Blueberries", yields:[1,1,1,2,2,3], harvest_ready:0.5*plant_growth_time}]
+            total_harvested = 0;
+            total_yield = 0;
+            using_collection_box = false;
+            if(plant.type == "Collection Box" && selected_plant == "Gather")
+            {
+                plants_to_harvest = plants;
+                using_collection_box = true;
+            }
+            else
+            {
+                plants_to_harvest = [plant];
+            }
+            active_sun_coral = false;
+            plants.forEach(plant => {
+                if(plant.type == "Sun Coral")
+                {
+                    active_sun_coral = true;
+                }
+            });
+            plants_to_harvest.forEach(plant => {
+                harvest_items.forEach(harvest_item => {
+                    if(plant.type == "Gem")
+                    {
+                        if(plants.indexOf(plant) != -1)
+                        {
+                            plants.splice(plants.indexOf(plant), 1);
+                            yield = harvest_item.yields[Math.floor(Math.random() * harvest_item.yields.length)];
+                            total_gems += yield;
+                            gems += yield;
+                            recent_things.push("Collected " + yield + " gems from the floor.")
+                        }
+                    }
+                    else if(harvest_item.type == plant.type)
+                    {
+                        storage.forEach(item => {
+                            if(item.item == harvest_item.harvest && (Date.now() - plant.born) > harvest_item.harvest_ready)
+                            {
+                                if(active_sun_coral)
+                                {
+                                    plant.born = Date.now()-60000;
+                                }
+                                else
+                                {
+                                    plant.born = Date.now();
+                                }
+                                yield = harvest_item.yields[Math.floor(Math.random() * harvest_item.yields.length)]
+                                item.quantity += yield;
+                                if(using_collection_box)
+                                {
+                                    total_harvested++;
+                                    total_yield += yield;
+                                }
+                                else
+                                {
+                                    recent_things.push("Collected " + yield + "x " + item.item + ".");
+                                }
+                                document.getElementById(item.item + "-count").textContent = item.quantity;
+                            }
+                        });
+                    }
+                });
+            });
+            if(using_collection_box)
+            {
+                recent_things.push("Collected " + total_yield + " items.")
+            }
+        }
+
+        function CheckAchievement(achievement_id) {
+            achievement = achievements[achievement_id];
+            grant_achievement = false;
+            achievements.forEach(loading_achievement => {
+                if(localStorage.getItem(loading_achievement.name + "-achievement") == undefined)
+                {
+                    loading_achievement.completed = false;
+                }
+                else
+                {
+                    loading_achievement.completed = localStorage.getItem(loading_achievement.name + "-achievement");
+                }
+            });
+            if(achievement.name == "First Steps")
+            {
+                if(bought_plant > 0 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Tile Finder")
+            {
+                if(tiles_found.length >= base_tiles.length && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Combine Harvester In A Box")
+            {
+                if(collection_box_bought > 0 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Dield Of Hopes and Dreams")
+            {
+                extra_plots.forEach(plot => {
+                    marigolds = 0;
+                    plot.plot_plants.forEach(plant => {
+                        if(plant.type == "Marigold")
+                        {
+                            marigolds++;
+                        }
+                    });
+                    if(marigolds > 127 && (achievement.completed == false))
+                    {
+                        grant_achievement = true;
+                    }
+                });
+            }
+            else if(achievement.name == "A Strange Alchemy")
+            {
+                if(black_bush_found > 0 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "We Need More Sand")
+            {
+                if(built_sandcastle > 0 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Gone Fishin'")
+            {
+                if(caught_any_fish > 0 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Global Warming")
+            {
+                if(caught_sun_coral > 0 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Effects Of Global Warming")
+            {
+                if(caught_bleached_coral > 0 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Goldilocks And The 3 Fishes")
+            {
+                if(caught_goldfish > 0 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Strange New Worlds")
+            {
+                if(unlocked_plots > 1 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Gem Entrepeneur")
+            {
+                if(total_gems > 1000 && (achievement.completed == false))
+                {
+                    grant_achievement = true;
+                }
+            }
+            else if(achievement.name == "Hoard Like A Dragon")
+            {
+                storage.forEach(item => {
+                    if(item.quantity > 999 && (achievement.completed == false))
+                    {
+                        grant_achievement = true;
+                    }
+                });
+            }
+            else if(achievement.name == "Biodiversity")
+            {
+                extra_plots.forEach(plot => {
+                    unique_plants = [];
+                    plot.plot_plants.forEach(plant => {
+                        if(unique_plants.includes(plant.type) == false && actual_plants.includes(plant.type))
+                        {
+                            unique_plants.push(plant.type);
+                        }
+                    });
+                    if(unique_plants.length == actual_plants.length && (achievement.completed == false))
+                    {
+                        grant_achievement = true;
+                    }
+                });
+            }
+            if(grant_achievement)
+            {
+                achievement.completed = true;
+                items_received = "Received: " + achievement.reward_amounts[0] + "x " + achievement.rewards[0];
+                recent_things.push("Completed achievement \"" + achievement.name + "\".")
+                    for (let i = 0; i < achievement.rewards.length; i++) {
+                        storage.forEach(item => {
+                            if(achievement.rewards[i] == item.item)
+                            {
+                                item.quantity += achievement.reward_amounts[i];
+                                if(i != 0)
+                                {
+                                    items_received += ", " + achievement.reward_amounts[i] + "x " + achievement.rewards[i];
+                                }
+                                document.getElementById(item.item + "-count").textContent = item.quantity;
+                            }
+                        });
+                    }
+                    recent_things.push(items_received + ".");
+                    localStorage.setItem(achievement.name + "-achievement", true)
+                    present_img = document.getElementById(achievement.name + "-achievement-present");
+                    present_img.src = "Icons/open_present.png";
+                    achievement_title = document.getElementById(achievement.name + "-achievement-title");
+                    achievement_title.textContent = achievement.name + " (Completed)";
+                    achievement_div = document.getElementById(achievement.name + "-achievement-div");
+                    achievement_div.style = "background-color:lightgray;"
+            }
+            SaveData()
+        }
+
+        function MovePlot(plot_num) {
+            if(plot_num == -1)
+            {
+                plot_num = parseInt(document.getElementById("plot-input").value);
+                if(plot_num >= unlocked_plots)
+                {
+                    plot_num = unlocked_plots;
+                }
+                else if(plot_num < 0)
+                {
+                    plot_num = 0;
+                }
+            }
+            if(plot_num > -1 && plot_num < unlocked_plots)
+            {
+                extra_plots[current_plot_num] = {plot_plants: plants, plot_tiles: tiles};
+                current_plot_num = plot_num;
+                try
+                {
+                    plants = extra_plots[plot_num].plot_plants;
+                    tiles = extra_plots[plot_num].plot_tiles;
+                }
+                catch
+                {
+                    plants = []
+                    tiles = []
+                    base_plants = ["Cactus", "Bush", "Snowy Bush", "None"]
+                    base_tiles_sprites = ["Icons/sand.png", "Icons/grass.png", "Icons/snowy_grass.png", ""]
+                    base_plants_sprites = ["Icons/cactus.png", "Icons/bush.png", "Icons/snowy_bush.png", ""]
+                    floor_items = ["Berries", "Blackberries", "Snowball"]
+                    floor_items_sprites = ["Icons/berries.png", "Icons/blackberries.png", "Icons/snowball.png"]
+                    base = Math.floor(Math.random() * base_tiles.length);
+                    random_plot = false;
+                    marigold_field = false;
+                    iterations = 0;
+                    has_lake = false;
+                    has_blotch = false;
+                    blotch_base = Math.floor(Math.random() * (base_tiles.length-1));
+                    blotch_x = Math.floor(Math.random() * 16);
+                    blotch_y = Math.floor(Math.random() * 8);
+                    if(Math.random() < 3/4)
+                    {
+                        has_blotch = true;
+                    }
+                    if(Math.random() < 1/16)
+                    {
+                        random_plot = true;
+                    }
+                    else if(Math.random() < 1/6)
+                    {
+                        has_lake = true;
+                    }
+                    if(Math.random() < 1/128)
+                    {
+                        random_plot = false;
+                        marigold_field = true;
+                        base = base_tiles.indexOf("Grass");
+                    }
+                    for (let x = 0; x < 16; x++) {
+                        for (let y = 0; y < 8; y++) {
+                            if(random_plot == true)
+                            {
+                                base = Math.floor(Math.random() * base_tiles.length);
+                            }
+                            if(has_lake && x < 12 && x > 8 && Math.random() < 2/3 && base_tiles[base] != "None" && random_plot == false)
+                            {
+                                tiles.push({type:"Water", image:"Icons/water1.png", x:x, y:y});
+                            }
+                            else if(has_blotch && (x < blotch_x+4 && x > blotch_x) && (y < blotch_y+4 && y > blotch_y) && Math.random() < 2/3 && base_tiles[base] != "None" && random_plot == false)
+                            {
+                                tiles.push({type:base_tiles[blotch_base], image:base_tiles_sprites[blotch_base], x:x, y:y});
+                            }
+                            else if(base_tiles[base] != "None")
+                            {
+                                tiles.push({type:base_tiles[base], image:base_tiles_sprites[base], x:x, y:y});
+                                if(base_tiles[base] == "Sand" && Math.random() < 1/512)
+                                {
+                                    plants.push({type:"Dark Cactus", image:"Icons/dark_cactus.png", x:x, y:y, born:0});
+                                }
+                                else if(base_tiles[base] == "Grass" && Math.random() < 1/2048 || marigold_field && Math.random() < 1/16)
+                                {
+                                    plants.push({type:"Marigold", image:"Icons/marigold.png", x:x, y:y, born:0});
+                                    console.log("MARIGOLD!!!")
+                                }
+                                else if(Math.random() < 1/64 && random_plot == false || Math.random() < 1/16 && random_plot)
+                                {
+                                    random_item = Math.floor(Math.random() * floor_items.length)
+                                    plants.push({type:floor_items[random_item], image:floor_items_sprites[random_item], x:x, y:y, born:0});
+                                }
+                                else if(Math.random() < 1/64 && random_plot == false || Math.random() < 1/16 && random_plot)
+                                {
+                                    plants.push({type:base_plants[base], image:base_plants_sprites[base], x:x, y:y, born:0});
+                                }
+                            }
+                        }
+                    }
+                    SaveData();
+                }
+                document.getElementById("plot-number").innerHTML = "Plot: <input id='plot-input' onchange='MovePlot(-1)' value='" + plot_num + "''></input>";
+            }
+        }
+
+        function SaveData() {
+            localStorage.setItem("save-exists", true)
+            temp_plot_num = current_plot_num;
+            MovePlot(0);
+            localStorage.setItem("garden-plants", JSON.stringify(plants));
+            localStorage.setItem("garden-tiles", JSON.stringify(tiles));
+            localStorage.setItem("extra-plots", JSON.stringify(extra_plots));
+            MovePlot(temp_plot_num);
+            localStorage.setItem("gem-count", gems);
+            localStorage.setItem("gem-refresh", last_gem_refresh);
+            localStorage.setItem("unlocked-plots", unlocked_plots);
+            localStorage.setItem("total-gem-count", total_gems);
+            localStorage.setItem("tiles-found", JSON.stringify(tiles_found));
+            localStorage.setItem("bought-plant", bought_plant);
+            localStorage.setItem("collection-box-bought", collection_box_bought);
+            localStorage.setItem("black-bush-found", black_bush_found);
+            localStorage.setItem("built-sandcastle", built_sandcastle);
+            localStorage.setItem("caught-any-fish", caught_any_fish);
+            localStorage.setItem("caught-bleached-coral", caught_bleached_coral);
+            localStorage.setItem("caught-sun-coral", caught_sun_coral);
+            localStorage.setItem("caught-goldfish", caught_goldfish);
+            localStorage.setItem("high-contrast", high_contrast);
+            for (let i = 0; i < storage.length; i++) {
+                const item = storage[i];
+                localStorage.setItem(item.item + "-count", item.quantity);
+            }
+        }
+
+        // Sets up the storage grid, where you can view the count of each item.
+        const storage_grid = document.getElementById("storage");
+        for (let i = 0; i < storage.length; i++) {
+            const grid_item = document.createElement("div");
+            grid_item.setAttribute("onclick","ChangePlant('" + storage[i].image + "', '" + storage[i].item + "')");
+            grid_item.textContent = storage[i].item;
+            grid_item.className = "storage-grid";
+            const item_icon = document.createElement("img");
+            item_icon.src = storage[i].image;
+            grid_item.appendChild(document.createElement("br"));
+            grid_item.appendChild(item_icon);
+            const item_count = document.createElement("p");
+            item_count.textContent = storage[i].quantity;
+            item_count.className = "item-count"
+            item_count.id = storage[i].item + "-count"
+            grid_item.appendChild(item_count);
+            storage_grid.appendChild(grid_item);
+        }
+
+        // Sets up the shop grid, where you can buy/sell items.
+        ChangeShop(1);
+
+        const achievements_grid = document.getElementById("achievements");
+        for (let i = 0; i < achievements.length; i++) {
+            const grid_item = document.createElement("div");
+            grid_item.id = achievements[i].name + "-achievement-div";
+            grid_item.setAttribute("onclick","CheckAchievement('" + i + "')");
+            const title = document.createElement("p");
+            title.id = achievements[i].name + "-achievement-title";
+            title.textContent = achievements[i].name;
+            grid_item.className = "achievements-grid";
+            const item_icon = document.createElement("img");
+            item_icon.src = "Icons/present.png";
+            item_icon.id = achievements[i].name + "-achievement-present";
+            grid_item.appendChild(title);
+            grid_item.appendChild(document.createElement("br"));
+            grid_item.appendChild(item_icon);
+            const description = document.createElement("p");
+            rewards_list = "Rewards: " + achievements[i].rewards[0] + " (" + achievements[i].reward_amounts[0] + ")";
+            achievements[i].rewards.forEach(reward => {
+                if(reward != achievements[i].rewards[0])
+                {
+                    rewards_list += ", " + reward + " (" + achievements[i].reward_amounts[achievements[i].rewards.indexOf(reward)] + ")";
+                }
+            });
+            description.innerHTML = achievements[i].desc + "<br><br>" + rewards_list;
+            description.id = achievements[i].name + "-achievement-desc-rewards";
+            description.className = "item-count";
+            grid_item.appendChild(description);
+            achievements_grid.appendChild(grid_item);
+        }
+        
+        achievements.forEach(loading_achievement => {
+            if(localStorage.getItem(loading_achievement.name + "-achievement") == undefined)
+            {
+                loading_achievement.completed = false;
+            }
+            else
+            {
+                loading_achievement.completed = localStorage.getItem(loading_achievement.name + "-achievement");
+            }
+        });
+
+        const sprite_list = document.getElementById("sprites");
+        for (let i = 0; i < sprites.length; i++) {
+            const img_sprite = document.createElement("img");
+            img_sprite.src = sprites[i];
+            sprite_list.appendChild(img_sprite)
+        }
+
+        // Sets up global resources.
+        sprites.forEach(sprite => {
+            var img = new Image();
+            img.src = sprite;
+            img.onload = function() {
+                resources[sprite] = img;
+            }
+        });
+
+        if(localStorage.getItem("save-exists"))
+        {
+            try
+            {
+                plants = JSON.parse(localStorage.getItem("garden-plants"))
+                tiles = JSON.parse(localStorage.getItem("garden-tiles"))
+                extra_plots = JSON.parse(localStorage.getItem("extra-plots"))
+                unlocked_plots = JSON.parse(localStorage.getItem("unlocked-plots"))
+                gems = JSON.parse(localStorage.getItem("gem-count"))
+                last_gem_refresh = JSON.parse(localStorage.getItem("gem-refresh"))
+                total_gems = JSON.parse(localStorage.getItem("total-gem-count"));
+                tiles_found = JSON.parse(localStorage.getItem("tiles-found"));
+                bought_plant = JSON.parse(localStorage.getItem("bought-plant"));
+                black_bush_found = JSON.parse(localStorage.getItem("black-bush-found"));
+                collection_box_bought = JSON.parse(localStorage.getItem("collection-box-bought"));
+                built_sandcastle = JSON.parse(localStorage.getItem("built-sandcastle"));
+                caught_any_fish = JSON.parse(localStorage.getItem("caught-any-fish"));
+                caught_bleached_coral = JSON.parse(localStorage.getItem("caught-bleached-coral"));
+                caught_sun_coral = JSON.parse(localStorage.getItem("caught-sun-coral"));
+                caught_goldfish = JSON.parse(localStorage.getItem("caught-goldfish"));
+                if(total_gems == null)
+                {
+                    total_gems = 0;
+                }
+                if(tiles_found == null)
+                {
+                    tiles_found = [];
+                }
+                if(bought_plant == null)
+                {
+                    bought_plant = 0;
+                }
+                if(collection_box_bought == null)
+                {
+                    collection_box_bought = 0;
+                }
+                if(built_sandcastle == true)
+                {
+                    built_sandcastle = 1;
+                }
+                high_contrast = JSON.parse(localStorage.getItem("high-contrast"))
+                for (let i = 0; i < storage.length; i++) {
+                    const item = storage[i];
+                    item.quantity = localStorage.getItem(item.item + "-count");
+                    if(item.quantity == null)
+                    {
+                        item.quantity = 0;
+                    }
+                    else if(item.quantity != "∞")
+                    {
+                        item.quantity = parseInt(item.quantity);
+                    }
+                    if(item.item == "Fishing Rod")
+                    {
+                        item.quantity = "∞";
+                    }
+                    document.getElementById(item.item + "-count").textContent = item.quantity;
+                }
+                HighContrast()
+            }
+            catch
+            {
+                console.log("Save data is corrupted...")
+            }
+        }
+        else
+        {
+            FirstLaunch();
+        }
+
+        loaded_settings = true;
+
+        temp_draw_image = resources["Icons/cactus.png"];
+
+        console.log("Resources loaded.");
+
+        setInterval(Refresh, 10);
+        setInterval(OccasionalRefresh, 1000)
+    </script>
+  </body>
+</html>
